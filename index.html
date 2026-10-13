@@ -1,523 +1,405 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Water Lens - Custom Color</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f5f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131416" media="(prefers-color-scheme: dark)">
+<title>信息板</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-html,body { width:100%; height:100%; overflow:hidden; background:#000; }
-#c { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; cursor:crosshair; }
-#hud {
-  position:fixed; top:10px; left:10px; right:10px;
-  display:flex; align-items:flex-start; justify-content:space-between;
-  pointer-events:none; z-index:20;
-}
-#dbg {
-  font:11px/1.6 monospace; color:rgba(0,255,120,.9);
-  background:rgba(0,0,0,.6); padding:5px 9px; border-radius:7px;
-  white-space:pre; max-width:55vw;
-}
-#btn-cam {
-  pointer-events:all;
-  width:40px; height:40px; border-radius:50%;
-  background:rgba(255,255,255,.18); backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,.3);
-  color:#fff; font-size:18px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-}
-#ui-bottom {
-  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
-  z-index:20; display:flex; gap:8px; align-items: center;
-  background:rgba(0,0,0,.45); backdrop-filter:blur(14px);
-  border:1px solid rgba(255,255,255,.14); border-radius:40px; padding:5px 7px;
-}
-.mb {
-  padding:7px 22px; border-radius:28px; border:none;
-  font-size:12px; font-weight:700; letter-spacing:.09em;
-  cursor:pointer; transition:all .2s;
-  color:rgba(255,255,255,.45); background:transparent;
-}
-.mb.on { background:rgba(255,255,255,.2); color:#fff; }
+*,*::before,*::after{box-sizing:border-box}
 
-/* ── 新增：美化取色器样式 ── */
-#tint-picker {
-  -webkit-appearance: none;
-  border: none;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  overflow: hidden;
-  cursor: pointer;
-  background: transparent;
-  padding: 0;
-  margin-left: 4px;
+:root{
+  --paper:#f5f3ee;
+  --card:#fffefb;
+  --ink:#1a1c1e;
+  --ink-2:#565b5f;
+  --ink-3:#8c9297;
+  --rule:#e0dbd2;
+  --rule-2:#c6c0b5;
+  --accent:#9d3328;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --serif:"Songti SC","Source Han Serif SC","Noto Serif SC",Georgia,"Times New Roman",SimSun,serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --wrap:780px;
 }
-#tint-picker::-webkit-color-swatch-wrapper { padding: 0; }
-#tint-picker::-webkit-color-swatch { border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; }
 
-#err {
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,.92);
-  color:#f88; font:12px/1.8 monospace; padding:20px;
-  white-space:pre-wrap; z-index:99; overflow:auto;
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#131416;
+    --card:#191b1e;
+    --ink:#e8e5df;
+    --ink-2:#a1a6aa;
+    --ink-3:#757b80;
+    --rule:#2a2d30;
+    --rule-2:#3c4044;
+    --accent:#d4766a;
+  }
+}
+
+html{-webkit-text-size-adjust:100%}
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.75;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* 纸张颗粒 */
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:99;
+  pointer-events:none;
+  opacity:.3;
+  mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection{background:color-mix(in srgb,var(--accent) 24%,transparent)}
+
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 22px}
+
+/* ---------- 顶栏 ---------- */
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:var(--paper);
+  background:color-mix(in srgb,var(--paper) 90%,transparent);
+  -webkit-backdrop-filter:saturate(150%) blur(10px);
+  backdrop-filter:saturate(150%) blur(10px);
+  border-bottom:1px solid var(--rule);
+}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px}
+.brand{display:flex;align-items:center;gap:9px;font-size:12.5px;letter-spacing:.08em;color:var(--ink-2)}
+.brand i{width:7px;height:7px;background:var(--accent);flex:none}
+
+.toggle{
+  appearance:none;background:none;border:0;margin:0;
+  padding:6px 0 6px 12px;
+  display:flex;align-items:center;gap:7px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  color:var(--ink-3);cursor:pointer;
+  transition:color .18s;
+}
+.toggle:hover{color:var(--ink)}
+.toggle i{width:6px;height:6px;border-radius:50%;background:var(--rule-2);flex:none;transition:background .18s}
+.toggle[aria-pressed="true"]{color:var(--accent)}
+.toggle[aria-pressed="true"] i{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+
+/* ---------- 报头 ---------- */
+.masthead{padding:46px 0 0}
+.kicker{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+h1{
+  margin:.7rem 0 .9rem;
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:clamp(1.9rem,6.2vw,3rem);
+  line-height:1.14;
+  letter-spacing:-.01em;
+  text-wrap:balance;
+}
+.dateline{
+  display:flex;flex-wrap:wrap;gap:4px 18px;
+  align-items:baseline;justify-content:space-between;
+  padding-bottom:9px;
+  border-bottom:1px solid var(--ink);
+  font-size:13px;
+  color:var(--ink-2);
+}
+.dateline .u{
+  font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.05em;color:var(--ink-3);
+}
+.heavy-rule{height:3px;background:var(--ink);margin-top:3px}
+
+/* ---------- 置顶公告 ---------- */
+.pinned{
+  margin-top:30px;
+  padding:20px 22px 22px;
+  background:var(--card);
+  border:1px solid var(--rule);
+  border-left:3px solid var(--accent);
+  border-radius:2px;
+}
+.pinned .label{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--accent);
+}
+.pinned h2{
+  margin:.65rem 0 .55rem;
+  font-family:var(--serif);
+  font-weight:600;
+  font-size:clamp(1.15rem,3.6vw,1.45rem);
+  line-height:1.5;
+  letter-spacing:-.005em;
+  text-wrap:balance;
+}
+.pinned p{
+  margin:0;
+  font-size:15.5px;
+  line-height:1.85;
+  color:var(--ink-2);
+  white-space:pre-wrap;
+  text-wrap:pretty;
+}
+
+/* ---------- 消息流 ---------- */
+.section-head{
+  display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  margin:46px 0 0;
+  padding-bottom:9px;
+  border-bottom:1px solid var(--ink);
+}
+.section-head h3{
+  margin:0;
+  font-family:var(--mono);font-size:11px;font-weight:600;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--ink);
+}
+.section-head span{
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--ink-3);
+}
+
+.feed{list-style:none;margin:0;padding:0}
+.item{
+  position:relative;
+  display:grid;
+  grid-template-columns:106px 1fr;
+  gap:0 22px;
+  padding:19px 0;
+  border-bottom:1px solid var(--rule);
+}
+.item.hi::before{
+  content:"";
+  position:absolute;
+  left:-13px;top:17px;bottom:17px;
+  width:3px;
+  background:var(--accent);
+}
+.item .when{
+  padding-top:3px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.7;
+  color:var(--ink-3);
+  font-variant-numeric:tabular-nums;
+}
+.item .when b{display:block;font-weight:400;color:var(--ink-2)}
+.item .body{min-width:0}
+
+.tag{
+  display:inline-block;
+  padding:2px 7px;
+  border:1px solid currentColor;
+  border-radius:1px;
+  font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.14em;
+  color:var(--ink-3);
+}
+.item.hi .tag{color:var(--accent)}
+
+.text{
+  margin:9px 0 0;
+  font-size:16px;
+  line-height:1.82;
+  white-space:pre-wrap;
+  text-wrap:pretty;
+}
+.text a{
+  color:var(--accent);
+  text-decoration:none;
+  border-bottom:1px solid color-mix(in srgb,var(--accent) 42%,transparent);
+}
+.text a:hover{border-bottom-color:var(--accent)}
+
+/* ---------- 页脚 ---------- */
+.foot{
+  display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;
+  margin-top:46px;
+  padding:14px 0 calc(56px + env(safe-area-inset-bottom));
+  border-top:3px solid var(--ink);
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+  color:var(--ink-3);
+}
+
+@media (max-width:560px){
+  .masthead{padding-top:32px}
+  .item{grid-template-columns:1fr;gap:8px}
+  .item .when{display:flex;gap:9px;padding-top:0}
+  .item .when b{display:inline}
+  .item.hi::before{left:-11px;top:14px;bottom:14px}
+  .pinned{padding:17px 16px 18px}
 }
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="hud">
-  <div id="dbg">INIT…</div>
-  <button id="btn-cam">⟳</button>
-</div>
-<div id="ui-bottom">
-  <button class="mb on" data-m="liquid">LIQUID</button>
-  <button class="mb"    data-m="crystal">CRYSTAL</button>
-  <input type="color" id="tint-picker" value="#73a5ff" title="调整水体颜色">
-</div>
-<div id="err"></div>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><i></i>信息板</div>
+    <button class="toggle" id="auto" type="button" aria-pressed="false">
+      <i></i><span id="autoLabel">自动刷新 关</span>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="masthead">
+    <div class="kicker">Private Bulletin</div>
+    <h1>信息板</h1>
+    <div class="dateline">
+      <span id="today"></span>
+      <span class="u">最后更新 <span id="latest">—</span></span>
+    </div>
+    <div class="heavy-rule"></div>
+  </div>
+
+  <!-- ============================================================
+       ① 置顶公告。不想留就整段删掉。
+       ============================================================ -->
+  <section class="pinned">
+    <div class="label">当前公告</div>
+    <h2>3 月 2 日晚上做一次数据迁移</h2>
+    <p>22:00 开始，大概两个小时。这段时间里 NAS 和家里的几个服务都会停，从外面也连不上。
+
+弄完我会把新地址写在下面的消息里，不用特意来问。</p>
+  </section>
+
+  <div class="section-head">
+    <h3>消息</h3>
+    <span id="count"></span>
+  </div>
+  <ul class="feed" id="feed"></ul>
+
+  <footer class="foot">
+    <span>信息板 · <span id="year"></span></span>
+    <span>内容更新后自动同步到所有设备</span>
+  </footer>
+
+</main>
+
 <script>
-(function(){
-'use strict';
+/* ============================================================
+   ② 消息列表。新消息写最前面，一条一个 {}，之间用逗号隔开。
 
-const canvas = document.getElementById('c');
-const dbg    = document.getElementById('dbg');
-const errDiv = document.getElementById('err');
-
-let gl, W, H, SW, SH;
-let facingUser = true;
-let stream=null, video=null, vidTex=null;
-let pp=[null,null], cur=0;
-let simP=null, renP=null, quadBuf=null;
-let mode=0.0;
-
-// ── 新增：存储颜色RGB值 ──
-let tintRGB = [0.45, 0.65, 1.0];
-
-const DECAY_FRAMES = 8;
-let pts=[];
-let ppts=[];
-
-function log(s){ dbg.textContent=s; }
-function die(s){ errDiv.style.display='block'; errDiv.textContent='ERROR:\n'+s; }
-
-function initGL(){
-  const o={alpha:false,antialias:false,depth:false,stencil:false};
-  gl=canvas.getContext('webgl',o)||canvas.getContext('experimental-webgl',o);
-  if(!gl){ die('WebGL n/a'); return false; }
-  if(!gl.getExtension('OES_texture_float')){ die('float tex n/a'); return false; }
-  gl.getExtension('OES_texture_float_linear');
-  return true;
-}
-function mkShader(type,src){
-  const s=gl.createShader(type);
-  gl.shaderSource(s,src); gl.compileShader(s);
-  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){
-    const e=gl.getShaderInfoLog(s);
-    throw new Error(e+'\n'+src.split('\n').map((l,i)=>(i+1)+': '+l).join('\n'));
+   time  写成 "2026-02-14 21:40"，只写日期也行
+   tag   标签文字，随便改
+   text  正文，换行直接敲回车
+   hi    写 true 就是红色强调条，不写就是普通灰色
+   ============================================================ */
+const FEED = [
+  {
+    time: '2026-02-14 21:40',
+    tag: '通知',
+    hi: true,
+    text: '周末两天我在外地，家里那台机器别断电。\n有急事直接打电话，微信可能看不到。'
+  },
+  {
+    time: '2026-02-14 18:05',
+    tag: '更新',
+    text: '路由器密码换了，新的写在显示器后面那张纸上。'
+  },
+  {
+    time: '2026-02-12 09:12',
+    tag: '待办',
+    text: '下周三之前把备份硬盘换掉，现在那块已经开始响了。'
+  },
+  {
+    time: '2026-02-09 22:30',
+    tag: '归档',
+    text: '一月的照片整理完了，放在 NAS 的 2026-01 目录里。'
   }
-  return s;
-}
-function mkProg(vs,fs){
-  const p=gl.createProgram();
-  gl.attachShader(p,mkShader(gl.VERTEX_SHADER,vs));
-  gl.attachShader(p,mkShader(gl.FRAGMENT_SHADER,fs));
-  gl.linkProgram(p);
-  if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
-  return p;
-}
-function mkFloatTex(w,h){
-  const t=gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D,t);
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.FLOAT,null);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  return t;
-}
-function mkFBO(tex){
-  const f=gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER,f);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
-  const s=gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-  if(s!==gl.FRAMEBUFFER_COMPLETE) throw new Error('FBO 0x'+s.toString(16));
-  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-  return f;
-}
-function ul(p,n){ return gl.getUniformLocation(p,n); }
+];
 
-function mkQuad(){
-  quadBuf=gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf);
-  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-}
-function drawQuad(p){
-  gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf);
-  const a=gl.getAttribLocation(p,'a_pos');
-  gl.enableVertexAttribArray(a);
-  gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
-  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
-}
+/* ================= 以下不用改 ================= */
 
-const VS=`
-attribute vec2 a_pos;
-varying   vec2 v_uv;
-void main(){
-  v_uv=a_pos*0.5+0.5;
-  gl_Position=vec4(a_pos,0.,1.);
-}`;
+(function () {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const linkify = s => esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 
-const SIM_FS=`
-precision highp float;
-varying vec2 v_uv;
-uniform sampler2D u_tex;
-uniform vec2  u_res;
-uniform float u_mode;
-uniform vec2  u_p[10];
-uniform vec2  u_v[10];
-uniform float u_n;
+  const list = document.getElementById('feed');
+  const frag = document.createDocumentFragment();
 
-void main(){
-  vec2 px=1./u_res;
-  float c =texture2D(u_tex,v_uv).r;
-  float pv=texture2D(u_tex,v_uv).g;
+  for (const it of FEED) {
+    const parts = String(it.time || '').trim().split(/\s+/);
+    const date = parts[0] || '';
+    const clock = parts[1] || '';
 
-  float N =texture2D(u_tex,v_uv+vec2(   0, px.y)).r;
-  float S =texture2D(u_tex,v_uv+vec2(   0,-px.y)).r;
-  float E =texture2D(u_tex,v_uv+vec2( px.x,  0)).r;
-  float W =texture2D(u_tex,v_uv+vec2(-px.x,  0)).r;
-  float NE=texture2D(u_tex,v_uv+vec2( px.x, px.y)).r;
-  float NW=texture2D(u_tex,v_uv+vec2(-px.x, px.y)).r;
-  float SE=texture2D(u_tex,v_uv+vec2( px.x,-px.y)).r;
-  float SW=texture2D(u_tex,v_uv+vec2(-px.x,-px.y)).r;
-  float lap=(N+S+E+W)*0.2+(NE+NW+SE+SW)*0.05-c;
+    const li = document.createElement('li');
+    li.className = it.hi ? 'item hi' : 'item';
 
-  float spd=0.50+u_mode*0.04;
-  float h=2.*c-pv+lap*(spd*2.2);
+    const when = document.createElement('div');
+    when.className = 'when';
+    const b = document.createElement('b');
+    b.textContent = date;
+    when.appendChild(b);
+    when.appendChild(document.createTextNode(clock));
 
-  float bd=0.988+u_mode*0.006;
-  h*=bd+(1.-bd)*smoothstep(0.,0.2,abs(h));
+    const body = document.createElement('div');
+    body.className = 'body';
 
-  vec2 uvF=vec2(v_uv.x, 1.-v_uv.y);
-  vec2 ar =vec2(u_res.x/u_res.y,1.);
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = it.tag || '';
 
-  for(int i=0;i<10;i++){
-    float active=step(float(i),u_n-1.);
-    if(active<0.5) continue;
+    const p = document.createElement('p');
+    p.className = 'text';
+    p.innerHTML = linkify(it.text || '');
 
-    vec2 fp=u_p[i];
-    vec2 fv=u_v[i];
-    float spd2=length(fv)*120.;
-
-    vec2 d2=(uvF-fp)*ar;
-    float dist=length(d2);
-
-    float presence=exp(-dist*dist*500.)*0.55;
-    float ring=exp(-dist*dist*3000.)*1.2;
-
-    vec2 pa=(uvF-(fp-fv*0.3))*ar;
-    vec2 ba=fv*ar*0.3;
-    float t2=clamp(dot(pa,ba)/max(dot(ba,ba),1e-5),0.,1.);
-    float dcap=length(pa-ba*t2);
-    float motion=exp(-max(dcap-0.02,0.)*60.)*spd2*0.8;
-
-    h+=(presence+ring+motion)*active;
+    body.appendChild(tag);
+    body.appendChild(p);
+    li.appendChild(when);
+    li.appendChild(body);
+    frag.appendChild(li);
   }
+  list.appendChild(frag);
 
-  h=clamp(h,-1.,1.);
-  gl_FragColor=vec4(h,c,0.,1.);
-}`;
+  document.getElementById('count').textContent = FEED.length + ' 条';
 
-const REN_FS=`
-precision highp float;
-varying vec2 v_uv;
-uniform sampler2D u_wave;
-uniform sampler2D u_vid;
-uniform vec2  u_sr;
-uniform float u_mode;
-uniform float u_mirX;
-uniform vec3  u_tint;  // ── 新增：接收从JS传来的颜色 ──
+  const latest = FEED.map(x => String(x.time || '')).sort().pop();
+  document.getElementById('latest').textContent = latest || '—';
 
-vec3 vid(vec2 uv){
-  uv.y=1.-uv.y;
-  uv.x=mix(uv.x,1.-uv.x,u_mirX);
-  return texture2D(u_vid,clamp(uv,.001,.999)).rgb;
-}
+  document.getElementById('today').textContent = new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric', month: 'long', day: 'numeric', weekday: 'long'
+  }).format(new Date());
 
-void main(){
-  vec2 px=1./u_sr;
-  float c =texture2D(u_wave,v_uv).r;
-  float N =texture2D(u_wave,v_uv+vec2(   0, px.y)).r;
-  float S =texture2D(u_wave,v_uv+vec2(   0,-px.y)).r;
-  float E =texture2D(u_wave,v_uv+vec2( px.x,  0)).r;
-  float W =texture2D(u_wave,v_uv+vec2(-px.x,  0)).r;
+  document.getElementById('year').textContent = new Date().getFullYear();
 
-  vec2  grad=vec2(E-W,N-S)*.5;
-  float lap=(N+S+E+W)*.25-c;
+  /* 自动刷新：开着的时候每分钟拉一次最新部署 */
+  const btn = document.getElementById('auto');
+  const label = document.getElementById('autoLabel');
+  let timer = null;
 
-  float liq=1.-u_mode, cry=u_mode;
-
-  float rs=0.55*liq+0.18*cry;
-  float ls=0.60*liq+0.85*cry;
-  vec2 off=grad*rs - grad*lap*ls*10.;
-
-  float cd=0.005*liq+0.009*cry;
-  float r=vid(v_uv+off+grad*cd).r;
-  float g=vid(v_uv+off        ).g;
-  float b=vid(v_uv+off-grad*cd).b;
-  vec3 col=vec3(r,g,b);
-
-  // ── 修改：将硬编码的蓝色替换为自定义的 u_tint ──
-  // Depth shading (深水阴影染色)
-  col*=mix(u_tint * 1.2, vec3(1.25,1.12,.96), c*.5+.5);
-
-  // Fresnel (表面反光染色)
-  vec3 norm=normalize(vec3(-grad*4.,1.));
-  float F0=.04+.08*cry;
-  float fr=F0+(1.-F0)*pow(1.-abs(norm.z),5.);
-  col=mix(col, u_tint*liq + vec3(.78,.90,1.)*cry, fr*.55);
-
-  // Dual-lobe specular (高光保持纯白/亮色)
-  vec3 ld=normalize(vec3(-.4,.7,.7));
-  vec3 rv=reflect(-ld,norm);
-  float sp=pow(max(rv.z,0.),95.)*.9+pow(max(rv.z,0.),6.)*.22;
-  col+=mix(vec3(1.,.96,.86),vec3(.88,.94,1.),cry)*sp*(.55+.45*cry);
-
-  // Crystal ice edge (冰晶边缘)
-  col=mix(col,vec3(.55,.82,1.)*col*1.45,clamp(abs(lap)*18.*cry,0.,.55));
-
-  gl_FragColor=vec4(clamp(col,0.,1.),1.);
-}`;
-
-function buildGPU(){
-  mkQuad();
-  try{ simP=mkProg(VS,SIM_FS); renP=mkProg(VS,REN_FS); }
-  catch(e){ die(e.message); return false; }
-  return true;
-}
-
-function resize(){
-  W=canvas.width =window.innerWidth;
-  H=canvas.height=window.innerHeight;
-  SW=Math.max(1,Math.floor(W/2));
-  SH=Math.max(1,Math.floor(H/2));
-  if(!gl) return;
-  for(let i=0;i<2;i++){
-    if(pp[i]){ gl.deleteFramebuffer(pp[i].f); gl.deleteTexture(pp[i].t); }
-    const t=mkFloatTex(SW,SH);
-    const f=mkFBO(t);
-    gl.bindFramebuffer(gl.FRAMEBUFFER,f);
-    gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
-    pp[i]={f,t};
-  }
-  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-}
-
-async function startCam(){
-  if(stream) stream.getTracks().forEach(t=>t.stop());
-  if(!video){
-    video=document.createElement('video');
-    video.playsInline=true; video.muted=true; video.autoplay=true;
-  }
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({
-      video:{width:{ideal:1280},height:{ideal:720},
-             facingMode:facingUser?'user':'environment'},
-      audio:false
-    });
-    video.srcObject=stream;
-    await video.play();
-    log('CAM OK – move mouse / show hands');
-  }catch(e){ die('Camera:\n'+e.message); }
-}
-
-function upVidTex(){
-  if(!video||video.readyState<2) return;
-  if(!vidTex){
-    vidTex=gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D,vidTex);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
-  }
-  gl.bindTexture(gl.TEXTURE_2D,vidTex);
-  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,video);
-}
-
-function frame(){
-  requestAnimationFrame(frame);
-  if(!gl||!pp[0]||!simP) return;
-  upVidTex();
-  if(!vidTex) return;
-
-  const activePts = pts.filter(p=>p.life>0);
-  activePts.forEach(p=>p.life--);
-  pts = activePts;
-
-  // SIM PASS
-  gl.bindFramebuffer(gl.FRAMEBUFFER,pp[1-cur].f);
-  gl.viewport(0,0,SW,SH);
-  gl.useProgram(simP);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D,pp[cur].t);
-  gl.uniform1i(ul(simP,'u_tex'),0);
-  gl.uniform2f(ul(simP,'u_res'),SW,SH);
-  gl.uniform1f(ul(simP,'u_mode'),mode);
-
-  const fp=new Float32Array(20), fv=new Float32Array(20);
-  const n=Math.min(pts.length,10);
-  for(let i=0;i<n;i++){
-    fp[i*2]=pts[i].x; fp[i*2+1]=pts[i].y;
-    fv[i*2]=pts[i].vx; fv[i*2+1]=pts[i].vy;
-  }
-  gl.uniform2fv(ul(simP,'u_p'),fp);
-  gl.uniform2fv(ul(simP,'u_v'),fv);
-  gl.uniform1f(ul(simP,'u_n'),n);
-  drawQuad(simP);
-  cur=1-cur;
-
-  // RENDER PASS
-  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-  gl.viewport(0,0,W,H);
-  gl.useProgram(renP);
-  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,pp[cur].t);
-  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D,vidTex);
-  gl.uniform1i(ul(renP,'u_wave'),0);
-  gl.uniform1i(ul(renP,'u_vid'),1);
-  gl.uniform2f(ul(renP,'u_sr'),SW,SH);
-  gl.uniform1f(ul(renP,'u_mode'),mode);
-  gl.uniform1f(ul(renP,'u_mirX'),facingUser?1.0:0.0);
-  
-  // ── 新增：将 JS 中的颜色值传递给着色器 ──
-  gl.uniform3f(ul(renP,'u_tint'), tintRGB[0], tintRGB[1], tintRGB[2]);
-  
-  drawQuad(renP);
-}
-
-const TIPS=[4,8,12,16,20];
-let mpSending=false;
-
-function initMP(){
-  if(typeof Hands==='undefined'){ log('MP not loaded – mouse/touch only'); return; }
-  const hands=new Hands({
-    locateFile:f=>'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/'+f
-  });
-  hands.setOptions({maxNumHands:2,modelComplexity:0,
-    minDetectionConfidence:0.5,minTrackingConfidence:0.4});
-
-  hands.onResults(res=>{
-    mpSending=false;
-    const keepMouse = pts.filter(p=>p._mouse);
-    const newMP=[];
-    if(res.multiHandLandmarks){
-      for(const hand of res.multiHandLandmarks){
-        for(const id of TIPS){
-          const lm=hand[id];
-          if(!lm) continue;
-          newMP.push({x:lm.x, y:lm.y, vx:0, vy:0, life:DECAY_FRAMES, _mouse:false});
+  function setAuto(on) {
+    btn.setAttribute('aria-pressed', String(on));
+    label.textContent = '自动刷新 ' + (on ? '开' : '关');
+    clearInterval(timer);
+    timer = null;
+    if (on) {
+      timer = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          location.replace(location.pathname + '?_=' + Date.now());
         }
-      }
+      }, 60000);
     }
-    const prevMP=pts.filter(p=>!p._mouse);
-    for(let i=0;i<Math.min(newMP.length,prevMP.length);i++){
-      newMP[i].vx=newMP[i].x-prevMP[i].x;
-      newMP[i].vy=newMP[i].y-prevMP[i].y;
-    }
-    pts=[...keepMouse, ...newMP];
-    const n=newMP.length;
-    log(n>0 ? `HANDS: ${n} tips | move hand to make waves` : 'HANDS: visible, move hand');
-  });
-
-  function sendFrame(){
-    if(!mpSending && video && video.readyState>=2){
-      mpSending=true;
-      hands.send({image:video}).catch(()=>{ mpSending=false; });
-    }
-    setTimeout(sendFrame, 66);
   }
-  setTimeout(sendFrame,1200);
-  log('MediaPipe loading… show hand to camera');
-}
 
-let mousePt=null;
-
-canvas.addEventListener('mousemove',e=>{
-  const x=e.clientX/W, y=e.clientY/H;
-  const vx=mousePt?x-mousePt.x:0, vy=mousePt?y-mousePt.y:0;
-  pts=pts.filter(p=>!p._mouse);
-  const p={x,y,vx,vy,life:3,_mouse:true};
-  pts.push(p);
-  mousePt={x,y};
-});
-canvas.addEventListener('mouseleave',()=>{
-  pts=pts.filter(p=>!p._mouse); mousePt=null;
-});
-
-const tmap={};
-canvas.addEventListener('touchstart',e=>{
-  e.preventDefault();
-  for(const t of e.changedTouches)
-    tmap[t.identifier]={x:t.clientX/W,y:t.clientY/H,vx:0,vy:0,life:3,_mouse:true};
-  syncTouch();
-},{passive:false});
-canvas.addEventListener('touchmove',e=>{
-  e.preventDefault();
-  for(const t of e.changedTouches){
-    const p=tmap[t.identifier];
-    const nx=t.clientX/W, ny=t.clientY/H;
-    tmap[t.identifier]={x:nx,y:ny,vx:p?nx-p.x:0,vy:p?ny-p.y:0,life:3,_mouse:true};
-  }
-  syncTouch();
-},{passive:false});
-canvas.addEventListener('touchend',e=>{
-  for(const t of e.changedTouches) delete tmap[t.identifier];
-  syncTouch();
-},{passive:false});
-function syncTouch(){
-  pts=pts.filter(p=>!p._mouse);
-  pts.push(...Object.values(tmap));
-}
-
-document.getElementById('btn-cam').addEventListener('click',async()=>{
-  facingUser=!facingUser; await startCam();
-});
-document.querySelectorAll('.mb').forEach(b=>{
-  b.addEventListener('click',()=>{
-    mode=b.dataset.m==='crystal'?1.0:0.0;
-    document.querySelectorAll('.mb').forEach(x=>x.classList.toggle('on',x===b));
-  });
-});
-
-// ── 新增：颜色选择器监听事件 ──
-const picker = document.getElementById('tint-picker');
-function updateTint(hex) {
-  // 把 HEX 颜色 (比如 #ff0000) 转换为 WebGL 需要的 0.0 - 1.0 的 RGB 浮点数
-  let bigint = parseInt(hex.slice(1), 16);
-  tintRGB[0] = ((bigint >> 16) & 255) / 255.0;
-  tintRGB[1] = ((bigint >> 8) & 255) / 255.0;
-  tintRGB[2] = (bigint & 255) / 255.0;
-}
-picker.addEventListener('input', (e) => updateTint(e.target.value));
-updateTint(picker.value); // 初始化调用一次
-
-window.addEventListener('resize',resize);
-
-async function main(){
-  if(!initGL()) return;
-  resize();
-  if(!buildGPU()) return;
-  await startCam();
-  const s=document.createElement('script');
-  s.src='https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4/hands.js';
-  s.crossOrigin='anonymous';
-  s.onload=initMP;
-  s.onerror=()=>log('MP CDN failed – mouse/touch only');
-  document.head.appendChild(s);
-  requestAnimationFrame(frame);
-}
-main();
-
+  btn.addEventListener('click', () => setAuto(btn.getAttribute('aria-pressed') !== 'true'));
+  setAuto(false);
 })();
 </script>
+
 </body>
 </html>
+
