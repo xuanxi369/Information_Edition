@@ -154,6 +154,8 @@ h1{
   color:var(--ink-2);
   white-space:pre-wrap;
   text-wrap:pretty;
+  overflow-wrap:anywhere;
+  word-break:break-all;
 }
 
 /* ---------- 消息流 ---------- */
@@ -265,13 +267,17 @@ h1{
     <div class="heavy-rule"></div>
   </div>
 
-  <!-- ============================================================
-       ① 置顶公告。不想留就整段删掉。
-       ============================================================ -->
+  <!-- 置顶公告 -->
   <section class="pinned">
-    <div class="label">当前公告</div>
+    <div class="label" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>当前公告</span>
+      <button onclick="copyTicket(this)" 
+              style="border:1px solid var(--rule-2); background:var(--paper); color:var(--ink); font-family:var(--mono); font-size:11px; padding:3px 9px; border-radius:2px; cursor:pointer; transition:all .15s ease;">
+        复制 Ticket
+      </button>
+    </div>
     <h2>Tickets</h2>
-    <p> iroh-file-v1:{"ticket":"blobaatffovgyopsfhbooqfvr2bfogcrdwlztqmdqqdt2i4o4lvfk66soajdnb2hi4dthixs65lto4ys2mjoojswyylzfzxdaltjojxwqltmnfxgwlrpaualncfsdwd6yaiaycudpqnbsybqbqfihaa2dfqdadakqvybuglagagavdyqdimwamappak65wxjuyiz6kvnk26eb53jj6u2uavpjy27vfw3y6qu2pthixa","name":"1公司介绍视频及产品介绍视频.zip","size":2852080928} </p>
+    <p id="ticket-text" style="word-break:break-all; overflow-wrap:anywhere; user-select:all; -webkit-user-select:all; font-family:var(--mono); font-size:12px; line-height:1.6; background:var(--paper); padding:10px 12px; border:1px solid var(--rule); border-radius:3px;">iroh-file-v1:{"ticket":"blobaatffovgyopsfhbooqfvr2bfogcrdwlztqmdqqdt2i4o4lvfk66soajdnb2hi4dthixs65lto4ys2mjoojswyylzfzxdaltjojxwqltmnfxgwlrpaualncfsdwd6yaiaycudpqnbsybqbqfihaa2dfqdadakqvybuglagagavdyqdimwamappak65wxjuyiz6kvnk26eb53jj6u2uavpjy27vfw3y6qu2pthixa","name":"1公司介绍视频及产品介绍视频.zip","size":2852080928}</p>
   </section>
 
   <div class="section-head">
@@ -288,14 +294,40 @@ h1{
 </main>
 
 <script>
-/* ============================================================
-   ② 消息列表。新消息写最前面，一条一个 {}，之间用逗号隔开。
+/* 复制 Ticket 兼容性逻辑 */
+function copyTicket(btn) {
+  const text = document.getElementById('ticket-text').innerText.trim();
+  const originalText = btn.innerText;
 
-   time  写成 "2026-02-14 21:40"，只写日期也行
-   tag   标签文字，随便改
-   text  正文，换行直接敲回车
-   hi    写 true 就是红色强调条，不写就是普通灰色
-   ============================================================ */
+  const onSuccess = () => {
+    btn.innerText = '已复制!';
+    setTimeout(() => { btn.innerText = originalText; }, 2000);
+  };
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(onSuccess).catch(() => fallbackCopy());
+  } else {
+    fallbackCopy();
+  }
+
+  function fallbackCopy() {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      onSuccess();
+    } catch (e) {
+      alert('请直接长按或选中框内文本复制');
+    }
+    document.body.removeChild(ta);
+  }
+}
+
+/* 消息列表 */
 const FEED = [
   {
     time: '2026-02-14 21:40',
@@ -319,8 +351,6 @@ const FEED = [
     text: '一月的照片整理完了，放在 NAS 的 2026-01 目录里。'
   }
 ];
-
-/* ================= 以下不用改 ================= */
 
 (function () {
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -374,7 +404,7 @@ const FEED = [
 
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  /* 自动刷新：开着的时候每分钟拉一次最新部署 */
+  /* 自动刷新 */
   const btn = document.getElementById('auto');
   const label = document.getElementById('autoLabel');
   let timer = null;
@@ -400,4 +430,3 @@ const FEED = [
 
 </body>
 </html>
-
